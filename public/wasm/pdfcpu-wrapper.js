@@ -90,5 +90,5 @@ export async function impose(snapshot, nup, format) {
     const contents = fs.readFileSync("output.pdf");
     fs.unlink("output.pdf");
     console.log("Your File ist Ready!");
-    return contents;
+    return new Uint8Array(contents);;
 };
