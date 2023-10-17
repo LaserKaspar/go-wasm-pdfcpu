@@ -6,43 +6,19 @@ let Buffer;
 
 configureFs();
 
-const downloadFile = async (filename) => {
-    await fs.readFile(filename, function(err, contents) {
-        download(new Blob([contents]), filename);
-	});
-};
+async function loadFileAsync(data) {
+    console.log(`Writing file to MemoryFS`);
+    await fs.writeFile(`/input.pdf`, data);
+    let exitCode = await runWasm([
+        "pdfcpu.wasm",
+        "validate",
+        "-c",
+        "disable",
+        `/input.pdf`,
+    ]);
 
-const readFileAsync = (file) => {
-    if(!file.name)
-        console.error(file);
-    return new Promise((resolve, reject) => {
-        console.log(`Writing ${file.name} to disk`);
-        if (file.isLoaded) return resolve();
-
-        let reader = new FileReader();
-        reader.fileName = file.name;
-
-        reader.onload = async (e) => {
-            let data = e.target.result.slice();
-            await fs.writeFile(`/${e.target.fileName}`, Buffer.from(data));
-            let exitCode = await runWasm([
-                "pdfcpu.wasm",
-                "validate",
-                "-c",
-                "disable",
-                `/${e.target.fileName}`,
-            ]);
-
-            if (exitCode !== 0) return reject();
-            file.isLoaded = true;
-            resolve(reader.result);
-        };
-
-        reader.onerror = reject;
-
-        reader.readAsArrayBuffer(file);
-    });
-};
+    if (exitCode !== 0) return reject();
+}
 
 const runWasm = async (param) => {
     if (window.cachedWasmResponse === undefined) {
@@ -84,33 +60,28 @@ function configureFs() {
     );
 }
 
-export async function startNupingFiles(files) {
-    for (let i = 0; i < files.length; i++) {
-        await readFileAsync(files[i]);
+export async function nupFile(snapshot, nup, format) {
+    await loadFileAsync(snapshot);
 
-        let newFileName = files[i].name.replace(/\.[^/.]+$/, "") + "-nuped.pdf";
+    let exitcode = await runWasm([
+        "pdfcpu.wasm",
+        "nup",
+        "-c",
+        "disable",
+        'f:' + format,
+        "output.pdf",
+        String(nup),
+        "input.pdf",
+    ]);
 
-        let exitcode = await runWasm([
-            "pdfcpu.wasm",
-            "nup",
-            "-c",
-            "disable",
-            'f:' + "A4L",
-            newFileName,
-            String(2),
-            files[i].name,
-        ]);
-
-        if (exitcode !== 0) {
-            console.error("There was an error nuping your PDFs");
-            return;
-        }
-
-        await fs.unlink(files[i].name);
-        await downloadFile(newFileName);
-        await fs.unlink(newFileName);
-        console.log("Your File ist Ready!");
+    if (exitcode !== 0) {
+        console.error("There was an error nuping your PDFs");
+        return;
     }
-    files = [];
-    return;
+
+    await fs.unlink("input.pdf");
+    const contents = fs.readFileSync("output.pdf");
+    fs.unlink("output.pdf");
+    console.log("Your File ist Ready!");
+    return contents;
 };
