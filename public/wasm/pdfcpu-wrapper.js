@@ -21,7 +21,7 @@ function configureFs() {
             fs = BrowserFS.BFSRequire("fs");
             Buffer = BrowserFS.BFSRequire("buffer").Buffer;
 
-            // TODO: Remove these:
+            // TODO: Find a way to remove these. 
             window.fs = fs;
             window.Buffer = Buffer;
         }
