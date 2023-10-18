@@ -1,10 +1,11 @@
 // FROM https://gist.github.com/aolde/8104861
-var http = require("http"),
-    url = require("url"),
-    path = require("path"),
-    fs = require("fs")
-    port = process.argv[2] || 8080,
-    mimeTypes = {
+import * as http from "http";
+import * as url from "url";
+import * as path from "path";
+import * as fs from "fs";
+
+const port = process.argv[2] || 8080;
+const mimeTypes = {
       "html": "text/html",
       "jpeg": "image/jpeg",
       "jpg": "image/jpeg",

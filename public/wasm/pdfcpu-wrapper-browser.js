@@ -55,7 +55,8 @@ const runWasm = async (param) => {
 async function loadFileAsync(data) {
     console.log(`Writing file to MemoryFS`);
     await fs.writeFile(`/input.pdf`, data);
-    let exitCode = await runWasm([
+    console.log(`Write done. Validating...`);
+    let exitcode = await runWasm([
         "pdfcpu.wasm",
         "validate",
         "-c",
@@ -63,13 +64,16 @@ async function loadFileAsync(data) {
         `/input.pdf`,
     ]);
 
-    if (exitCode !== 0)
+    if (exitcode !== 0)
         throw new Error("There was an error validating your PDFs");
+
+    console.log(`File is Valid`);
 }
 
 export async function impose(snapshot, nup, format) {
     await loadFileAsync(Buffer.from(snapshot));
 
+    console.error("Nuping File");
     let exitcode = await runWasm([
         "pdfcpu.wasm",
         "nup",
@@ -90,5 +94,5 @@ export async function impose(snapshot, nup, format) {
     const contents = fs.readFileSync("output.pdf");
     fs.unlink("output.pdf");
     console.log("Your File ist Ready!");
-    return new Uint8Array(contents);;
+    return new Uint8Array(contents);
 };
