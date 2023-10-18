@@ -64,21 +64,12 @@ async function loadFileAsync(data) {
     console.log(`File is Valid`);
 }
 
-export async function impose(snapshot, nup, format) {
+export async function oneToOne(wasmArray, snapshot) {
     await loadFileAsync(Buffer.from(snapshot));
 
     console.log("Nuping File");
 
-    let exitcode = await runWasm([
-        "pdfcpu.wasm",
-        "nup",
-        "-c",
-        "disable",
-        'f:' + format,
-        "/output.pdf",
-        String(nup),
-        "input.pdf",
-    ]);
+    let exitcode = await runWasm(wasmArray);
     if (exitcode !== 0) {
         console.error("There was an error nuping your PDFs");
         return;
@@ -104,7 +95,19 @@ export async function impose(snapshot, nup, format) {
     fs.unlinkSync("output.pdf");
     console.log("Your File ist Ready!");
     return new Uint8Array(data);
-};
+}
+
+export async function manyToOne() {
+    //TODO: Do this of neccesary for some operations
+}
+
+export async function oneToMany() {
+    //TODO: Do this of neccesary for some operations
+}
+
+export async function manyToMany() {
+    //TODO: Do this of neccesary for some operations
+}
 
 // THX: https://stackoverflow.com/questions/26165725/nodejs-check-file-exists-if-not-wait-till-it-exist
 function checkExistsWithTimeout(filePath, timeout) {

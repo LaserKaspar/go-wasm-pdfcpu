@@ -1,4 +1,4 @@
-// TODO: uses client side download dep
+// uses client side download dep
 
 import { impose } from "./functions/impose.js";
 
