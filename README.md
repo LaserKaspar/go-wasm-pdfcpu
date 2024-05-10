@@ -49,7 +49,7 @@ import "./wasm_exec.js";
 
 After some modifications to wasm_exec.html we should be good to go. We'll remove `<script src="wasm_exec.js"></script>` and replace it with an import statement at the beginning of the next script tag `import "./wasm_exec_memfs.js";` importing our new wasm_exec using memfs.
 
-Testing this you will see, that the console output is broken now. To get the console working again, we will use the guide from the beginning again: [Guide: wcchoi/go-wasm-pdfcpu](github.com/wcchoi/go-wasm-pdfcpu/blob/master/article.md?plain=1#L359-L392).
+Testing this you will see, that the console output is broken now. To get the console working again, we will use the guide from the beginning again: [Guide: wcchoi/go-wasm-pdfcpu](https://github.com/wcchoi/go-wasm-pdfcpu/blob/master/article.md?plain=1#L359-L392).
 
 Memfs does not seem to forward STDOUT/STDERR of the wasm module. We will need to add this code to wasm_exec_memfs.js in order to do that:
 
@@ -113,7 +113,9 @@ var ConfigPath string = "disable"
 
 With this out of our way, let's continue!
 
-## Reading files from memfs
+## Browser
+
+### Reading files from memfs
 
 To pass files into wasm we need to write them to memfs. Writing should be as simple as writing the buffer of the file but in a browser environment we don't have a buffer readily available, so let's install one.
 
@@ -152,4 +154,33 @@ wasm_exec_memfs.js:17 validating(mode=relaxed) /input.pdf ...
 wasm_exec_memfs.js:17 validation ok
 ```
 
-## Writing files to memfs
+### Writing files to memfs
+
+Awesome, now lets try something that would actually write some data. Like wcchoi lets try extracting the first page:
+
+```js
+go.argv = ['pdfcpu.wasm', 'trim', '-pages', '1', '/input.pdf', '/output.pdf'];
+```
+
+Downloading the file (as well as some cleanup) is as simple as:
+
+```js
+globalThis.fs.promises.unlink("/input.pdf");
+const result = await globalThis.fs.promises.readFile("/output.pdf");
+
+var blob = new Blob([result], {type: "application/pdf"});
+var objectUrl = URL.createObjectURL(blob);
+window.open(objectUrl);
+
+globalThis.fs.promises.unlink("/output.pdf");
+```
+
+We now have a fully functioning version of pdfcpu inside our browser!
+
+## Node
+
+Lets setup the same thing in nodejs.
+
+### Reading files from memfs
+
+### Writing files to memfs
