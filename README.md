@@ -179,8 +179,52 @@ We now have a fully functioning version of pdfcpu inside our browser!
 
 ## Node
 
-Lets setup the same thing in nodejs.
+Let's setup the same thing in nodejs.
 
-### Reading files from memfs
+Create a new file called wasm_exec_memfs_node.js and paste the contents from wasm_exec_memfs.js with one small change: MemFS can now be imported directly after installing it via `npm i memfs`
+```js
+import memfs from 'memfs';
+```
 
-### Writing files to memfs
+Create another file calld run_wasm_node.js and use the contents of wasm_exec.html's script tag as a base.
+Next we'll mix it with changes from wasm_exec_node.js to load the wasm module correctly and use nodes available libraries where possible.
+
+```js
+import "./wasm_exec_memfs_node.js";
+import fs from "node:fs";
+
+const go = new Go();
+go.argv = ['pdfcpu.wasm', 'trim', '-pages', '1', '/input.pdf', '/output.pdf'];
+
+WebAssembly.instantiate(fs.readFileSync("pdfcpu.wasm"), go.importObject).then(async (result) => {
+    process.on("exit", (code) => { // Node.js exits if no event handler is pending
+		if (code === 0 && !go.exited) {
+			// deadlock, make Go print error and stack traces
+			go._pendingEvent = { id: 0 };
+			go._resume();
+		}
+	});
+
+    const buffer = fs.readFileSync('./input.pdf');
+      
+    await globalThis.fs.promises.writeFile("/input.pdf", buffer);
+
+    await go.run(result.instance);
+
+    globalThis.fs.promises.unlink("/input.pdf");
+    const pdfcpu_result = await globalThis.fs.promises.readFile("/output.pdf");
+
+    fs.writeFileSync("./output.pdf", pdfcpu_result);
+
+    globalThis.fs.promises.unlink("/output.pdf");
+
+}).catch((err) => {
+	console.error(err);
+});
+```
+
+NodeJS will now read the file ./input.pdf and write the first page of that file to ./output.pdf when `node .\run_wasm_node.js` is executed.
+
+---
+
+It should now finally be possible to integrate this into StirlingPDF-v2!
